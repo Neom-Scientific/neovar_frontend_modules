@@ -15,7 +15,7 @@ const ProjectAnalysis = () => {
                     return;
                 }
                 const response = await axios.get(
-                    `http://localhost:5000/progress?sessionId=${encodeURIComponent(sessionId)}&email=${encodeURIComponent(email)}`
+                    `https://neovar-backend.onrender.com/progress?sessionId=${encodeURIComponent(sessionId)}&email=${encodeURIComponent(email)}`
                 );
                 const data = response.data.rows[0];
                 setProgressData([data]); // Wrap in array for table rendering
@@ -32,7 +32,7 @@ const ProjectAnalysis = () => {
         const fetchData = async () => {
             try {
                 const email = localStorage.getItem('email') || '';
-                const response = await axios.get(`http://localhost:5000/read-counter-json?email=${email}`);
+                const response = await axios.get(`https://neovar-backend.onrender.com/read-counter-json?email=${email}`);
                 // console.log('response:', response.data);
                 setCounterData(response.data);
             } catch (error) {
@@ -42,16 +42,16 @@ const ProjectAnalysis = () => {
         fetchData();
     }, []);
 
-   const handleDownloadLink =async(projectid)=>{
-    try{
-        projectid='PRJ-20250826-20';
-        const response = await axios.get(`http://localhost:5000/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`);
+//    const handleDownloadLink =async(projectid)=>{
+//     try{
+//         projectid='PRJ-20250826-20';
+//         const response = await axios.get(`https://neovar-backend.onrender.com/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`);
         
-    }
-    catch(error){
-        console.error('API error:', error);
-    }
-   }
+//     }
+//     catch(error){
+//         console.error('API error:', error);
+//     }
+//    }
     return (
         <div className="w-full px-8 py-4">
             <div className="overflow-auto max-h-[70vh]">

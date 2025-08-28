@@ -94,7 +94,7 @@ function NewProject() {
 
   //       setShowProgressModal(true);
   //       await axios.post(
-  //         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+  //         `https://neovar-backend.onrender.com/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
   //         formData,
   //         {
   //           headers: { 'Content-Type': 'multipart/form-data' },
@@ -114,7 +114,7 @@ function NewProject() {
   //     uploadedFiles.push(file.name);
   //   }
 
-  //   await axios.post('http://localhost:5000/merge', {
+  //   await axios.post('https://neovar-backend.onrender.com/merge', {
   //     sessionId,
   //     fileNames: uploadedFiles,
   //     testName,
@@ -177,7 +177,7 @@ function NewProject() {
   
         setShowProgressModal(true);
         await axios.post(
-          `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+          `https://neovar-backend.onrender.com/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -197,7 +197,7 @@ function NewProject() {
       uploadedFiles.push(file.name);
     }
   
-    await axios.post('http://localhost:5000/merge', {
+    await axios.post('https://neovar-backend.onrender.com/merge', {
       sessionId,
       fileNames: uploadedFiles,
       testName,
@@ -360,7 +360,7 @@ export default NewProject;
 
 //       setShowProgressModal(true);
 //       await axios.post(
-//         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+//         `https://neovar-backend.onrender.com/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
 //         formData,
 //         {
 //           headers: { 'Content-Type': 'multipart/form-data' },
@@ -380,7 +380,7 @@ export default NewProject;
 //     uploadedFiles.push(file.name);
 //   }
 
-//   await axios.post('http://localhost:5000/merge', {
+//   await axios.post('https://neovar-backend.onrender.com/merge', {
 //     sessionId,
 //     fileNames: uploadedFiles,
 //     testName,

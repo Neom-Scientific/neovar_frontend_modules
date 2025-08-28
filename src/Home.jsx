@@ -7,7 +7,7 @@ const Home = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/read-counter-json?email=${email}`);
+                const response = await axios.get(`https://neovar-backend.onrender.com/read-counter-json?email=${email}`);
                 // console.log('response:', response.data);
                 setCounterData(response.data);
             } catch (error) {
@@ -21,7 +21,7 @@ const Home = () => {
         try {
             // projectid = 'PRJ-20';
             const response = await axios.get(
-                `http://localhost:5000/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
+                `https://neovar-backend.onrender.com/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
                 { responseType: 'blob' }
             );
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -42,7 +42,7 @@ const Home = () => {
     //     try {
     //         projectid = 'PRJ-20250826-20';
     //         const response = await axios.get(
-    //             `http://localhost:5000/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
+    //             `https://neovar-backend.onrender.com/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
     //             { responseType: 'blob' }
     //         );
     //         // Try to get filename from Content-Disposition header
