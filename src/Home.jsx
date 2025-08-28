@@ -1,16 +1,28 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
+import Cookies from 'js-cookie';
 
 const Home = () => {
     const [counterData, setCounterData] = useState([]);
-    const email = localStorage.getItem('email') || '';
+    const user = Cookies.get('neovar_user') || '';
+    const email = JSON.parse(user).email;
+    console.log(process.env.REACT_APP_URL);
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`https://neovar-backend.onrender.com/read-counter-json?email=${email}`);
-                // console.log('response:', response.data);
-                setCounterData(response.data);
+                const response = await axios.get(`${process.env.REACT_APP_URL}read-counter-json?email=${email}`);
+                if (response.status === 200) {
+                    console.log('response:', response);
+                    setCounterData(response.data);
+                }
+                else if (response.status === 404) {
+                    console.log('404')
+                    setCounterData([]);
+                }
             } catch (error) {
+                if (error.response) {
+                    console.error('API error:', error.response.data[0].message);
+                }
                 console.error('API error:', error);
             }
         }
@@ -21,7 +33,7 @@ const Home = () => {
         try {
             // projectid = 'PRJ-20';
             const response = await axios.get(
-                `https://neovar-backend.onrender.com/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
+                `${process.env.REACT_APP_URL}download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
                 { responseType: 'blob' }
             );
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -42,7 +54,7 @@ const Home = () => {
     //     try {
     //         projectid = 'PRJ-20250826-20';
     //         const response = await axios.get(
-    //             `https://neovar-backend.onrender.com/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
+    //             `http://localhost:5000/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
     //             { responseType: 'blob' }
     //         );
     //         // Try to get filename from Content-Disposition header
@@ -82,15 +94,25 @@ const Home = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {counterData.map((item, index) => (
-                            <tr key={index} className="border-t">
-                                <td className="px-4 py-2">{item.projectid}</td>
-                                <td className="px-4 py-2">{item.projectname}</td>
-                                <td className="px-4 py-2">{new Date(parseInt(item.creationtime)).toLocaleString()}</td>
-                                <td className="px-4 py-2">{item.numberofsamples}</td>
-                                <td className="px-4 py-2 cursor-pointer text-blue-400 underline" onClick={() => handleDownloadLink(item.projectid)}>Download Link</td>
+                        {counterData && counterData.length > 0 ?
+                            counterData.map((item, index) => (
+                                <tr key={index} className="border-t">
+                                    <td className="px-4 py-2">{item.projectid}</td>
+                                    <td className="px-4 py-2">{item.projectname}</td>
+                                    <td className="px-4 py-2">{new Date(parseInt(item.creationtime)).toLocaleString()}</td>
+                                    <td className="px-4 py-2">{item.numberofsamples}</td>
+                                    <td className="px-4 py-2 cursor-pointer text-blue-400 underline" onClick={() => handleDownloadLink(item.projectid)}>Download Link</td>
+                                </tr>
+                            ))
+
+                            :
+                            <tr>
+                                <td colSpan="5" className="px-4 py-2 text-center text-lg font-bold text-orange-500">
+                                    No Project Found
+                                </td>
                             </tr>
-                        ))}
+
+                        }
                     </tbody>
                 </table>
             </div>

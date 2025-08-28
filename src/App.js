@@ -1,10 +1,26 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Home from "./Home";
 import NewProject from "./NewProject";
 import ProjectAnalysis from "./ProjectAnalysis";
+import Cookies from "js-cookie"
+import Auth from "./Auth";
+import Header from "./Header";
 
 function App() {
   const [activeTab, setActiveTab] = useState("home");
+  const [User, setUser] = useState(null);
+
+  useEffect(()=>{
+    const user = Cookies.get('neovar_user');
+    if(user){
+      const parsedUser = JSON.parse(user);
+      setUser(parsedUser);
+    }
+  },[])
+
+  if(!User) {
+    return <Auth/>;
+  }
 
   const tabList = [
     { key: "home", label: "Home" },
@@ -14,6 +30,8 @@ function App() {
   ];
 
   return (
+    <>
+    <Header/>
     <div className="mx-auto p-3">
       <div className="w-full bg-orange-500 rounded-lg flex justify-center items-center mt-4">
         <ul className="flex w-full">
@@ -43,6 +61,7 @@ function App() {
         {activeTab === "result" && <div className="text-center text-2xl text-orange-500">this tab is under devlopment</div>}
       </div>
     </div>
+    </>
   );
 }
 

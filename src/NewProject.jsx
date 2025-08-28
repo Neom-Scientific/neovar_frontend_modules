@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import path from 'path-browserify';
+import Cookies from 'js-cookie';
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -16,7 +17,9 @@ function NewProject() {
   const [selectedFiles, setSelectedFiles] = useState({});
 
   useEffect(() => {
-    setEmail(localStorage.getItem('email') || '');
+    const user = Cookies.get('neovar_user') || '';
+    const email = JSON.parse(user).email;
+    setEmail(email);
   }, []);
 
   const cleanId = (id) => {
@@ -94,7 +97,7 @@ function NewProject() {
 
   //       setShowProgressModal(true);
   //       await axios.post(
-  //         `https://neovar-backend.onrender.com/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+  //         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
   //         formData,
   //         {
   //           headers: { 'Content-Type': 'multipart/form-data' },
@@ -114,7 +117,7 @@ function NewProject() {
   //     uploadedFiles.push(file.name);
   //   }
 
-  //   await axios.post('https://neovar-backend.onrender.com/merge', {
+  //   await axios.post('http://localhost:5000/merge', {
   //     sessionId,
   //     fileNames: uploadedFiles,
   //     testName,
@@ -147,37 +150,37 @@ function NewProject() {
       alert('Please select a test name before uploading files');
       return;
     }
-    sessionId = sessionId +'-' + email;
-  
+    sessionId = sessionId + '-' + email;
+
     for (const file of files) {
       if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
         const baseName = extractBaseName(file.name);
         const matched = sampleIds.some(id => cleanId(id) === baseName);
-  
+
         if (!matched) {
           alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
           continue;
         }
       }
 
-  
+
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-  
+
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, file.size);
         const chunk = file.slice(start, end);
-  
+
         const formData = new FormData();
         formData.append('chunk', chunk);
         formData.append('sessionId', sessionId);
         formData.append('projectName', projectName);
         formData.append('chunkIndex', i);
         formData.append('fileName', file.name);
-  
+
         setShowProgressModal(true);
         await axios.post(
-          `https://neovar-backend.onrender.com/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+          `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -193,11 +196,11 @@ function NewProject() {
           }
         );
       }
-  
+
       uploadedFiles.push(file.name);
     }
-  
-    await axios.post('https://neovar-backend.onrender.com/merge', {
+
+    await axios.post(`${process.env.REACT_APP_URL}merge`, {
       sessionId,
       fileNames: uploadedFiles,
       testName,
@@ -205,13 +208,13 @@ function NewProject() {
       numberOfSamples: sampleIds.length,
       projectName,
     });
-  
+
     localStorage.setItem('sessionId', sessionId);
-  
+
     setShowProgressModal(false);
     alert('✅ All valid files uploaded and merged!');
   };
-  
+
 
   return (
     <div className="mx-auto py-8 px-4">
@@ -360,7 +363,7 @@ export default NewProject;
 
 //       setShowProgressModal(true);
 //       await axios.post(
-//         `https://neovar-backend.onrender.com/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+//         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
 //         formData,
 //         {
 //           headers: { 'Content-Type': 'multipart/form-data' },
@@ -380,7 +383,7 @@ export default NewProject;
 //     uploadedFiles.push(file.name);
 //   }
 
-//   await axios.post('https://neovar-backend.onrender.com/merge', {
+//   await axios.post('http://localhost:5000/merge', {
 //     sessionId,
 //     fileNames: uploadedFiles,
 //     testName,

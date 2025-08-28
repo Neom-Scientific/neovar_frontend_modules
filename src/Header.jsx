@@ -1,4 +1,5 @@
 import React from 'react'
+import Cookies from 'js-cookie';
 
 const Header = () => {
     return (
@@ -10,7 +11,12 @@ const Header = () => {
                         <span className="ms-3 text-2xl text-transparent bg-clip-text inline-block bg-gradient-to-r from-orange-600 to-blue-400">NeoVar</span>
                     </div>
                     <div>
-                        <button className='bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded'>
+                        <button 
+                        onClick={()=>{
+                            Cookies.remove('neovar_user');
+                            window.location.reload();
+                        }}
+                        className='bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded'>
                             Log Out
                         </button>
                     </div>
