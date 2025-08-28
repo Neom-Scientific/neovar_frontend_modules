@@ -1,0 +1,396 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import * as XLSX from 'xlsx';
+import path from 'path-browserify';
+
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+
+function NewProject() {
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [sampleIds, setSampleIds] = useState([]);
+  const [testName, setTestName] = useState('');
+  const [email, setEmail] = useState('');
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [fileProgress, setFileProgress] = useState({});
+  const [selectedFiles, setSelectedFiles] = useState({});
+
+  useEffect(() => {
+    setEmail(localStorage.getItem('email') || '');
+  }, []);
+
+  const cleanId = (id) => {
+    if (!id) return '';
+    return id
+      .toString()
+      .trim()
+      .normalize()
+      .replace(/(_R[12]|_[12])$/, '');
+  };
+
+  const extractBaseName = (fileName) => {
+    let baseName = path.basename(fileName).replace(/\.(fastq|fq)(\.gz)?$/i, '');
+    baseName = cleanId(baseName);
+    return baseName;
+  };
+
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+    const ids = sheetData
+      .map(row => cleanId(row['Sample ID']))
+      .filter(Boolean);
+
+    setSampleIds(ids);
+
+    alert(`Excel loaded with ${ids.length} Sample IDs`);
+  };
+
+  // const handleFileUpload = async (e) => {
+  //   const files = e.target.files;
+  //   const sessionId = new Date().toLocaleString('en-GB', {
+  //     year: 'numeric',
+  //     month: '2-digit',
+  //     day: '2-digit',
+  //     hour: '2-digit',
+  //     minute: '2-digit',
+  //     second: '2-digit',
+  //   }).replace(/[/, ]/g, '-').replace(/:/g, '-');
+  //   const uploadedFiles = [];
+  //   if (testName === '') {
+  //     alert('Please select a test name before uploading files');
+  //     return;
+  //   }
+
+  //   for (const file of files) {
+  //     if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
+  //       const baseName = extractBaseName(file.name);
+  //       const matched = sampleIds.some(id => cleanId(id) === baseName);
+
+  //       if (!matched) {
+  //         alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+  //         continue;
+  //       }
+  //     }
+
+  //     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+  //     for (let i = 0; i < totalChunks; i++) {
+  //       const start = i * CHUNK_SIZE;
+  //       const end = Math.min(start + CHUNK_SIZE, file.size);
+  //       const chunk = file.slice(start, end);
+
+  //       const formData = new FormData();
+  //       formData.append('chunk', chunk);
+  //       formData.append('sessionId', sessionId);
+  //       formData.append('projectName', projectName);
+  //       formData.append('chunkIndex', i);
+  //       formData.append('fileName', file.name);
+
+  //       setShowProgressModal(true);
+  //       await axios.post(
+  //         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+  //         formData,
+  //         {
+  //           headers: { 'Content-Type': 'multipart/form-data' },
+  //           onUploadProgress: (progressEvent) => {
+  //             const percent = Math.round(
+  //               ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
+  //             );
+  //             setFileProgress(prev => ({
+  //               ...prev,
+  //               [file.name]: percent
+  //             }));
+  //           },
+  //         }
+  //       );
+  //     }
+
+  //     uploadedFiles.push(file.name);
+  //   }
+
+  //   await axios.post('http://localhost:5000/merge', {
+  //     sessionId,
+  //     fileNames: uploadedFiles,
+  //     testName,
+  //     email,
+  //     numberOfSamples: sampleIds.length,
+  //     projectName,
+  //   });
+
+  //   localStorage.setItem('sessionId', sessionId);
+
+  //   setShowProgressModal(false);
+  //   alert('✅ All valid files uploaded and merged!');
+  // };
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    console.log('files:', files);
+    setSelectedFiles(files.map(f => f.name)); // Store all file names
+    setFileProgress(files.reduce((acc, f) => ({ ...acc, [f.name]: 0 }), {}));
+    let sessionId = new Date().toLocaleString('en-GB', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).replace(/[/, ]/g, '-').replace(/:/g, '-');
+    const uploadedFiles = [];
+    if (testName === '') {
+      alert('Please select a test name before uploading files');
+      return;
+    }
+    sessionId = sessionId +'-' + email;
+  
+    for (const file of files) {
+      if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
+        const baseName = extractBaseName(file.name);
+        const matched = sampleIds.some(id => cleanId(id) === baseName);
+  
+        if (!matched) {
+          alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+          continue;
+        }
+      }
+
+  
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+  
+        const formData = new FormData();
+        formData.append('chunk', chunk);
+        formData.append('sessionId', sessionId);
+        formData.append('projectName', projectName);
+        formData.append('chunkIndex', i);
+        formData.append('fileName', file.name);
+  
+        setShowProgressModal(true);
+        await axios.post(
+          `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (progressEvent) => {
+              const percent = Math.round(
+                ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
+              );
+              setFileProgress(prev => ({
+                ...prev,
+                [file.name]: percent
+              }));
+            },
+          }
+        );
+      }
+  
+      uploadedFiles.push(file.name);
+    }
+  
+    await axios.post('http://localhost:5000/merge', {
+      sessionId,
+      fileNames: uploadedFiles,
+      testName,
+      email,
+      numberOfSamples: sampleIds.length,
+      projectName,
+    });
+  
+    localStorage.setItem('sessionId', sessionId);
+  
+    setShowProgressModal(false);
+    alert('✅ All valid files uploaded and merged!');
+  };
+  
+
+  return (
+    <div className="mx-auto py-8 px-4">
+      <label className="block text-lg font-semibold mb-2">Project Name</label>
+      <input
+        className="w-1/2 mb-6 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-orange-400"
+        type="text"
+        value={projectName}
+        onChange={(e) => setProjectName(e.target.value)}
+        placeholder="Project Name"
+      />
+      <div className='flex flex-col md:flex-row gap-4'>
+        <div className='w-full'>
+          <label className="block text-xl font-bold mb-2">Upload Excel Sheet</label>
+          <input
+            className="w-full mb-1 px-4 py-1 border rounded"
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleExcelUpload}
+          />
+          <div className="text-sm text-gray-600 mb-6">Supported formats: .xls, .xlsx</div>
+        </div>
+        <div className="w-full flex flex-col items-start">
+          <span className="block text-xl font-bold mb-2">Download Sheet Format</span>
+          <a href='/downloads/nipt.xls' className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded">
+            Download Excel File
+          </a>
+        </div>
+      </div>
+
+      <label className="block text-xl font-bold mb-2">Select the Type of Test</label>
+      <select
+        className="w-1/2 mb-6 px-4 py-2 border rounded bg-gray-100"
+        onChange={(e) => setTestName(e.target.value)}
+        value={testName}
+      >
+        <option value=''>Select Test Type</option>
+        <option value='exome'>Exome</option>
+        <option value='carrier'>Carrier</option>
+        <option value='clinical'>Clinical</option>
+      </select>
+
+      <label className="block text-xl font-bold mb-2">Upload Files</label>
+      <input
+        className="w-1/2 mb-1 px-4 py-1 border rounded"
+        type="file"
+        accept='.fastq,.fq ,.fastq.gz,.fq.gz '
+        multiple
+        onChange={handleFileUpload}
+      />
+      <div className="text-sm text-gray-600 mb-6">Accepted: .fastq, .fq, .fastq.gz, .fq.gz</div>
+
+
+      <button
+        className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded"
+        onClick={() => alert('Start Analysis')}
+      >
+        Start Analysis
+      </button>
+
+      {/* Table */}
+      <div className="mt-12">
+        <table className="min-w-full border-t">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 text-left">Library Id</th>
+              <th className="px-4 py-2 text-left">Sample ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sampleIds.map((id, index) => (
+              <tr key={index}>
+                <td className="px-4 py-2">{index + 1}</td>
+                <td className="px-4 py-2">{id}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="text-center text-sm text-gray-600 mt-2">Check the Sheet Data</div>
+      </div>
+      {showProgressModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md flex flex-col items-center">
+            <span className="text-lg font-semibold mb-4">Uploading Files...</span>
+            <div className="w-full space-y-4">
+              {Object.entries(fileProgress).map(([name, percent]) => (
+                <div key={name} className="mb-2">
+                  <div className="text-sm font-medium mb-1">{name}</div>
+                  <progress className="w-full" value={percent} max="100" />
+                  <span className="text-xs ml-2">{percent}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default NewProject;
+
+// const handleFileUpload = async (e) => {
+//   const files = Array.from(e.target.files);
+//   console.log('files:', files);
+//   setSelectedFiles(files.map(f => f.name)); // Store all file names
+//   setFileProgress(files.reduce((acc, f) => ({ ...acc, [f.name]: 0 }), {}));
+//   const sessionId = new Date().toLocaleString('en-GB', {
+//     year: 'numeric',
+//     month: '2-digit',
+//     day: '2-digit',
+//     hour: '2-digit',
+//     minute: '2-digit',
+//     second: '2-digit',
+//   }).replace(/[/, ]/g, '-').replace(/:/g, '-');
+//   const uploadedFiles = [];
+//   if (testName === '') {
+//     alert('Please select a test name before uploading files');
+//     return;
+//   }
+
+//   for (const file of files) {
+//     if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
+//       const baseName = extractBaseName(file.name);
+//       const matched = sampleIds.some(id => cleanId(id) === baseName);
+
+//       if (!matched) {
+//         alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+//         continue;
+//       }
+//     }
+
+//     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+//     for (let i = 0; i < totalChunks; i++) {
+//       const start = i * CHUNK_SIZE;
+//       const end = Math.min(start + CHUNK_SIZE, file.size);
+//       const chunk = file.slice(start, end);
+
+//       const formData = new FormData();
+//       formData.append('chunk', chunk);
+//       formData.append('sessionId', sessionId);
+//       formData.append('projectName', projectName);
+//       formData.append('chunkIndex', i);
+//       formData.append('fileName', file.name);
+
+//       setShowProgressModal(true);
+//       await axios.post(
+//         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+//         formData,
+//         {
+//           headers: { 'Content-Type': 'multipart/form-data' },
+//           onUploadProgress: (progressEvent) => {
+//             const percent = Math.round(
+//               ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
+//             );
+//             setFileProgress(prev => ({
+//               ...prev,
+//               [file.name]: percent
+//             }));
+//           },
+//         }
+//       );
+//     }
+
+//     uploadedFiles.push(file.name);
+//   }
+
+//   await axios.post('http://localhost:5000/merge', {
+//     sessionId,
+//     fileNames: uploadedFiles,
+//     testName,
+//     email,
+//     numberOfSamples: sampleIds.length,
+//     projectName,
+//   });
+
+//   localStorage.setItem('sessionId', sessionId);
+
+//   setShowProgressModal(false);
+//   alert('✅ All valid files uploaded and merged!');
+// };
