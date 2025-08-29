@@ -61,7 +61,7 @@ function NewProject() {
   };
 
   // Limit the number of concurrent promises
-  async function promisePool(tasks, poolLimit = 2) {
+  async function promisePool(tasks, poolLimit = 25) {
     const results = [];
     const executing = [];
     for (const task of tasks) {
