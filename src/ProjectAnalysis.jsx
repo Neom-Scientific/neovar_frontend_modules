@@ -19,6 +19,9 @@ const ProjectAnalysis = () => {
                 const response = await axios.get(
                     `${process.env.REACT_APP_URL}progress?sessionId=${encodeURIComponent(sessionId)}&email=${encodeURIComponent(email)}`
                 );
+                if(response.data[0].status === 404){
+                    return setProgressData([]);
+                }
                 const data = response.data.rows[0];
                 setProgressData([data]); // Wrap in array for table rendering
             } catch (error) {
@@ -35,8 +38,12 @@ const ProjectAnalysis = () => {
         const fetchData = async () => {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_URL}read-counter-json?email=${email}`);
-                console.log('response:', response.data);
+                if(response.status === 200) {
                 setCounterData(response.data);
+                }
+                else if (response.data[0].status === 404) {
+                    setCounterData([]);
+                }
             } catch (error) {
                 console.error('API error:', error);
             }
@@ -72,7 +79,7 @@ const ProjectAnalysis = () => {
                             </tr>
                         ))
                         )}
-                        {counterData && counterData.length > 0 ?
+                        {counterData && counterData.length > 0 && counterData[0].status !== 404 ?
                             counterData.map((item, index) => (
                                 <tr key={index} className="border-t">
                                     <td className="px-4 py-2">{item.projectid}</td>

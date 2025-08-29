@@ -60,6 +60,25 @@ function NewProject() {
     // alert(`Excel loaded with ${ids.length} Sample IDs`);
   };
 
+  // Limit the number of concurrent promises
+  async function promisePool(tasks, poolLimit = 2) {
+    const results = [];
+    const executing = [];
+    for (const task of tasks) {
+      const p = Promise.resolve().then(() => task());
+      results.push(p);
+
+      if (poolLimit <= tasks.length) {
+        const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+        executing.push(e);
+        if (executing.length >= poolLimit) {
+          await Promise.race(executing);
+        }
+      }
+    }
+    return Promise.all(results);
+  }
+
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     setSelectedFiles(files.map(f => f.name)); // Store all file names
@@ -98,86 +117,171 @@ function NewProject() {
     }
 
     if (validProcess.status === 200) {
-      await Promise.all(files.map(async (file) => {
-        if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
-          const baseName = extractBaseName(file.name);
-          const matched = sampleIds.some(id => cleanId(id) === baseName);
+      //   await Promise.all(files.map(async (file) => {
+      //     if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
+      //       const baseName = extractBaseName(file.name);
+      //       const matched = sampleIds.some(id => cleanId(id) === baseName);
 
-          if (!matched) {
-            // alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
-            toast.error(`FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
-            return;
-          }
-        }
+      //       if (!matched) {
+      //         // alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+      //         toast.error(`FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+      //         return;
+      //       }
+      //     }
 
-        let lastTime = Date.now();
-        let lastLoaded = 0;
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+      //     let lastTime = Date.now();
+      //     let lastLoaded = 0;
+      //     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-        for (let i = 0; i < totalChunks; i++) {
-          const start = i * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, file.size);
-          const chunk = file.slice(start, end);
+      //     for (let i = 0; i < totalChunks; i++) {
+      //       const start = i * CHUNK_SIZE;
+      //       const end = Math.min(start + CHUNK_SIZE, file.size);
+      //       const chunk = file.slice(start, end);
 
-          const formData = new FormData();
-          formData.append('chunk', chunk);
-          formData.append('sessionId', sessionId);
-          formData.append('projectName', projectName);
-          formData.append('chunkIndex', i);
-          formData.append('fileName', file.name);
+      //       const formData = new FormData();
+      //       formData.append('chunk', chunk);
+      //       formData.append('sessionId', sessionId);
+      //       formData.append('projectName', projectName);
+      //       formData.append('chunkIndex', i);
+      //       formData.append('fileName', file.name);
 
-          setShowProgressModal(true);
-          await axios.post(
-            `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
-            formData,
-            {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              onUploadProgress: (progressEvent) => {
-                // Calculate total loaded for this file
-                const stats = fileUploadStats.current[file.name];
-                const now = Date.now();
-                // progressEvent.loaded is for this chunk, so add to totalLoaded
-                const chunkLoaded = (i * CHUNK_SIZE) + progressEvent.loaded;
-                const timeDiff = (now - stats.lastTime) / 1000; // seconds
-                const bytesDiff = chunkLoaded - stats.lastLoaded;
-                if (timeDiff > 0) {
-                  const speed = bytesDiff / timeDiff; // bytes per second
-                  setFileSpeed(prev => ({
-                    ...prev,
-                    [file.name]: speed
-                  }));
-                  stats.lastTime = now;
-                  stats.lastLoaded = chunkLoaded;
-                }
-                const percent = Math.round(
-                  ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
-                );
-                setFileProgress(prev => ({
-                  ...prev,
-                  [file.name]: percent
-                }));
-              }
+      //       setShowProgressModal(true);
+      //       await axios.post(
+      //         `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+      //         formData,
+      //         {
+      //           headers: { 'Content-Type': 'multipart/form-data' },
+      //           timeout: 600000, // 10 minutes per chunk
+      //           onUploadProgress: (progressEvent) => {
+      //             // Calculate total loaded for this file
+      //             const stats = fileUploadStats.current[file.name];
+      //             const now = Date.now();
+      //             // progressEvent.loaded is for this chunk, so add to totalLoaded
+      //             const chunkLoaded = (i * CHUNK_SIZE) + progressEvent.loaded;
+      //             const timeDiff = (now - stats.lastTime) / 1000; // seconds
+      //             const bytesDiff = chunkLoaded - stats.lastLoaded;
+      //             if (timeDiff > 0) {
+      //               const speed = bytesDiff / timeDiff; // bytes per second
+      //               setFileSpeed(prev => ({
+      //                 ...prev,
+      //                 [file.name]: speed
+      //               }));
+      //               stats.lastTime = now;
+      //               stats.lastLoaded = chunkLoaded;
+      //             }
+      //             const percent = Math.round(
+      //               ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
+      //             );
+      //             setFileProgress(prev => ({
+      //               ...prev,
+      //               [file.name]: percent
+      //             }));
+      //           }
+      //         }
+      //       );
+      //     }
+
+      //     uploadedFiles.push(file.name);
+      //   }));
+
+      //   await axios.post(`${process.env.REACT_APP_URL}merge`, {
+      //     sessionId,
+      //     fileNames: uploadedFiles,
+      //     testName,
+      //     email,
+      //     numberOfSamples: sampleIds.length,
+      //     projectName,
+      //   });
+
+      //   localStorage.setItem('sessionId', sessionId);
+      //   setShowAnalysis(true);
+      //   setShowProgressModal(false);
+      //   toast.success('All valid files uploaded and merged successfully!');
+      //   // alert('✅ All valid files uploaded and merged!');
+      // }
+      if (validProcess.status === 200) {
+        // Create an array of upload tasks (functions)
+        const uploadTasks = files.map(file => async () => {
+          if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
+            const baseName = extractBaseName(file.name);
+            const matched = sampleIds.some(id => cleanId(id) === baseName);
+
+            if (!matched) {
+              toast.error(`FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+              return;
             }
-          );
-        }
+          }
 
-        uploadedFiles.push(file.name);
-      }));
+          let lastTime = Date.now();
+          let lastLoaded = 0;
+          const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-      await axios.post(`${process.env.REACT_APP_URL}merge`, {
-        sessionId,
-        fileNames: uploadedFiles,
-        testName,
-        email,
-        numberOfSamples: sampleIds.length,
-        projectName,
-      });
+          for (let i = 0; i < totalChunks; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            const chunk = file.slice(start, end);
 
-      localStorage.setItem('sessionId', sessionId);
-      setShowAnalysis(true);
-      setShowProgressModal(false);
-      toast.success('All valid files uploaded and merged successfully!');
-      // alert('✅ All valid files uploaded and merged!');
+            const formData = new FormData();
+            formData.append('chunk', chunk);
+            formData.append('sessionId', sessionId);
+            formData.append('projectName', projectName);
+            formData.append('chunkIndex', i);
+            formData.append('fileName', file.name);
+
+            setShowProgressModal(true);
+            await axios.post(
+              `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+              formData,
+              {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 600000, // 10 minutes per chunk
+                onUploadProgress: (progressEvent) => {
+                  const stats = fileUploadStats.current[file.name];
+                  const now = Date.now();
+                  const chunkLoaded = (i * CHUNK_SIZE) + progressEvent.loaded;
+                  const timeDiff = (now - stats.lastTime) / 1000;
+                  const bytesDiff = chunkLoaded - stats.lastLoaded;
+                  if (timeDiff > 0) {
+                    const speed = bytesDiff / timeDiff;
+                    setFileSpeed(prev => ({
+                      ...prev,
+                      [file.name]: speed
+                    }));
+                    stats.lastTime = now;
+                    stats.lastLoaded = chunkLoaded;
+                  }
+                  const percent = Math.round(
+                    ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
+                  );
+                  setFileProgress(prev => ({
+                    ...prev,
+                    [file.name]: percent
+                  }));
+                }
+              }
+            );
+          }
+
+          uploadedFiles.push(file.name);
+        });
+
+        // Use the pool with a concurrency limit (e.g., 2)
+        await promisePool(uploadTasks, 2);
+
+        await axios.post(`${process.env.REACT_APP_URL}merge`, {
+          sessionId,
+          fileNames: uploadedFiles,
+          testName,
+          email,
+          numberOfSamples: sampleIds.length,
+          projectName,
+        });
+
+        localStorage.setItem('sessionId', sessionId);
+        setShowAnalysis(true);
+        setShowProgressModal(false);
+        toast.success('All valid files uploaded and merged successfully!');
+      }
     }
   };
 

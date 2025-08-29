@@ -10,11 +10,12 @@ const Home = () => {
         const fetchData = async () => {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_URL}read-counter-json?email=${email}`);
+                // console.log('response', response.data[0].message);
                 if (response.status === 200) {
                     setCounterData(response.data);
                 }
-                else if (response.status === 404) {
-                    console.log('404')
+                else if(response.data[0].status === 404) {
+                    // console.log('404')
                     setCounterData([]);
                 }
             } catch (error) {
@@ -26,6 +27,8 @@ const Home = () => {
         }
         fetchData();
     }, []);
+
+    // console.log('counterData', counterData);
 
     const handleDownloadLink = async (projectid) => {
         try {
@@ -92,7 +95,7 @@ const Home = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {counterData && counterData.length > 0 ?
+                        {counterData && counterData.length > 0 && counterData[0].status !== 404 ?
                             counterData.map((item, index) => (
                                 <tr key={index} className="border-t">
                                     <td className="px-4 py-2">{item.projectid}</td>
