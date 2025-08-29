@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import Cookies from 'js-cookie';
+import { toast, ToastContainer } from 'react-toastify';
 
 const Auth = () => {
     const [activeTab, setActiveTab] = useState('login');
@@ -45,7 +46,8 @@ const Auth = () => {
             }
             const response = axios.post('https://trf-dashboard-bay.vercel.app/api/request-insert', data)
             if (response.data[0].status === 200) {
-                alert('Request Submitted Successfully. You will receive username and password on your email.');
+                // alert('Request Submitted Successfully. You will receive username and password on your email.');
+                toast.success('Request Submitted Successfully. You will receive username and password on your email.');
                 setActiveTab('login');
             }
         }
@@ -239,6 +241,7 @@ const Auth = () => {
                     </form>
                 )}
             </div>
+            <ToastContainer/>
         </div>
     );
 

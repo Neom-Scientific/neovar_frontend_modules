@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import path from 'path-browserify';
 import Cookies from 'js-cookie';
+import { toast, ToastContainer } from 'react-toastify';
+import ProjectAnalysis from './ProjectAnalysis';
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
 function NewProject() {
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // const [uploadProgress, setUploadProgress] = useState(0);
   const [sampleIds, setSampleIds] = useState([]);
   const [testName, setTestName] = useState('');
   const [email, setEmail] = useState('');
@@ -15,6 +17,9 @@ function NewProject() {
   const [projectName, setProjectName] = useState('');
   const [fileProgress, setFileProgress] = useState({});
   const [selectedFiles, setSelectedFiles] = useState({});
+  const [fileSpeed, setFileSpeed] = useState({});
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const fileUploadStats = useRef({});
 
   useEffect(() => {
     const user = Cookies.get('neovar_user') || '';
@@ -51,92 +56,23 @@ function NewProject() {
 
     setSampleIds(ids);
 
-    alert(`Excel loaded with ${ids.length} Sample IDs`);
+    toast.success(`Excel loaded with ${ids.length} Sample IDs`);
+    // alert(`Excel loaded with ${ids.length} Sample IDs`);
   };
-
-  // const handleFileUpload = async (e) => {
-  //   const files = e.target.files;
-  //   const sessionId = new Date().toLocaleString('en-GB', {
-  //     year: 'numeric',
-  //     month: '2-digit',
-  //     day: '2-digit',
-  //     hour: '2-digit',
-  //     minute: '2-digit',
-  //     second: '2-digit',
-  //   }).replace(/[/, ]/g, '-').replace(/:/g, '-');
-  //   const uploadedFiles = [];
-  //   if (testName === '') {
-  //     alert('Please select a test name before uploading files');
-  //     return;
-  //   }
-
-  //   for (const file of files) {
-  //     if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
-  //       const baseName = extractBaseName(file.name);
-  //       const matched = sampleIds.some(id => cleanId(id) === baseName);
-
-  //       if (!matched) {
-  //         alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
-  //         continue;
-  //       }
-  //     }
-
-  //     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-
-  //     for (let i = 0; i < totalChunks; i++) {
-  //       const start = i * CHUNK_SIZE;
-  //       const end = Math.min(start + CHUNK_SIZE, file.size);
-  //       const chunk = file.slice(start, end);
-
-  //       const formData = new FormData();
-  //       formData.append('chunk', chunk);
-  //       formData.append('sessionId', sessionId);
-  //       formData.append('projectName', projectName);
-  //       formData.append('chunkIndex', i);
-  //       formData.append('fileName', file.name);
-
-  //       setShowProgressModal(true);
-  //       await axios.post(
-  //         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
-  //         formData,
-  //         {
-  //           headers: { 'Content-Type': 'multipart/form-data' },
-  //           onUploadProgress: (progressEvent) => {
-  //             const percent = Math.round(
-  //               ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
-  //             );
-  //             setFileProgress(prev => ({
-  //               ...prev,
-  //               [file.name]: percent
-  //             }));
-  //           },
-  //         }
-  //       );
-  //     }
-
-  //     uploadedFiles.push(file.name);
-  //   }
-
-  //   await axios.post('http://localhost:5000/merge', {
-  //     sessionId,
-  //     fileNames: uploadedFiles,
-  //     testName,
-  //     email,
-  //     numberOfSamples: sampleIds.length,
-  //     projectName,
-  //   });
-
-  //   localStorage.setItem('sessionId', sessionId);
-
-  //   setShowProgressModal(false);
-  //   alert('✅ All valid files uploaded and merged!');
-  // };
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
-    console.log('files:', files);
     setSelectedFiles(files.map(f => f.name)); // Store all file names
     setFileProgress(files.reduce((acc, f) => ({ ...acc, [f.name]: 0 }), {}));
+    setFileSpeed(files.reduce((acc, f) => ({ ...acc, [f.name]: 0 }), {}));
+    fileUploadStats.current = {};
+    files.forEach(file => {
+      fileUploadStats.current[file.name] = {
+        lastTime: Date.now(),
+        lastLoaded: 0,
+        totalLoaded: 0
+      };
+    });
     let sessionId = new Date().toLocaleString('en-GB', {
       year: 'numeric',
       month: '2-digit',
@@ -147,74 +83,107 @@ function NewProject() {
     }).replace(/[/, ]/g, '-').replace(/:/g, '-');
     const uploadedFiles = [];
     if (testName === '') {
-      alert('Please select a test name before uploading files');
+      // alert('Please select a test name before uploading files');
+      toast.error('Please select a test name before uploading files');
       return;
     }
     sessionId = sessionId + '-' + email;
 
-    for (const file of files) {
-      if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
-        const baseName = extractBaseName(file.name);
-        const matched = sampleIds.some(id => cleanId(id) === baseName);
+    const validProcess = await axios.get(`${process.env.REACT_APP_URL}start-project?email=${encodeURIComponent(email)}`);
 
-        if (!matched) {
-          alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
-          continue;
-        }
-      }
-
-
-      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-
-        const formData = new FormData();
-        formData.append('chunk', chunk);
-        formData.append('sessionId', sessionId);
-        formData.append('projectName', projectName);
-        formData.append('chunkIndex', i);
-        formData.append('fileName', file.name);
-
-        setShowProgressModal(true);
-        await axios.post(
-          `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
-          formData,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            onUploadProgress: (progressEvent) => {
-              const percent = Math.round(
-                ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
-              );
-              setFileProgress(prev => ({
-                ...prev,
-                [file.name]: percent
-              }));
-            },
-          }
-        );
-      }
-
-      uploadedFiles.push(file.name);
+    // console.log('validProcess:', validProcess);
+    if (validProcess.data.status === 400) {
+      toast.error(validProcess.data.message);
+      return;
     }
 
-    await axios.post(`${process.env.REACT_APP_URL}merge`, {
-      sessionId,
-      fileNames: uploadedFiles,
-      testName,
-      email,
-      numberOfSamples: sampleIds.length,
-      projectName,
-    });
+    if (validProcess.status === 200) {
+      await Promise.all(files.map(async (file) => {
+        if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
+          const baseName = extractBaseName(file.name);
+          const matched = sampleIds.some(id => cleanId(id) === baseName);
 
-    localStorage.setItem('sessionId', sessionId);
+          if (!matched) {
+            // alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+            toast.error(`FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
+            return;
+          }
+        }
 
-    setShowProgressModal(false);
-    alert('✅ All valid files uploaded and merged!');
+        let lastTime = Date.now();
+        let lastLoaded = 0;
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunk = file.slice(start, end);
+
+          const formData = new FormData();
+          formData.append('chunk', chunk);
+          formData.append('sessionId', sessionId);
+          formData.append('projectName', projectName);
+          formData.append('chunkIndex', i);
+          formData.append('fileName', file.name);
+
+          setShowProgressModal(true);
+          await axios.post(
+            `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+            formData,
+            {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              onUploadProgress: (progressEvent) => {
+                // Calculate total loaded for this file
+                const stats = fileUploadStats.current[file.name];
+                const now = Date.now();
+                // progressEvent.loaded is for this chunk, so add to totalLoaded
+                const chunkLoaded = (i * CHUNK_SIZE) + progressEvent.loaded;
+                const timeDiff = (now - stats.lastTime) / 1000; // seconds
+                const bytesDiff = chunkLoaded - stats.lastLoaded;
+                if (timeDiff > 0) {
+                  const speed = bytesDiff / timeDiff; // bytes per second
+                  setFileSpeed(prev => ({
+                    ...prev,
+                    [file.name]: speed
+                  }));
+                  stats.lastTime = now;
+                  stats.lastLoaded = chunkLoaded;
+                }
+                const percent = Math.round(
+                  ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
+                );
+                setFileProgress(prev => ({
+                  ...prev,
+                  [file.name]: percent
+                }));
+              }
+            }
+          );
+        }
+
+        uploadedFiles.push(file.name);
+      }));
+
+      await axios.post(`${process.env.REACT_APP_URL}merge`, {
+        sessionId,
+        fileNames: uploadedFiles,
+        testName,
+        email,
+        numberOfSamples: sampleIds.length,
+        projectName,
+      });
+
+      localStorage.setItem('sessionId', sessionId);
+      setShowAnalysis(true);
+      setShowProgressModal(false);
+      toast.success('All valid files uploaded and merged successfully!');
+      // alert('✅ All valid files uploaded and merged!');
+    }
   };
 
+  if (showAnalysis) {
+    return <ProjectAnalysis />;
+  }
 
   return (
     <div className="mx-auto py-8 px-4">
@@ -268,12 +237,12 @@ function NewProject() {
       <div className="text-sm text-gray-600 mb-6">Accepted: .fastq, .fq, .fastq.gz, .fq.gz</div>
 
 
-      <button
+      {/* <button
         className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded"
         onClick={() => alert('Start Analysis')}
       >
         Start Analysis
-      </button>
+      </button> */}
 
       {/* Table */}
       <div className="mt-12">
@@ -305,95 +274,18 @@ function NewProject() {
                   <div className="text-sm font-medium mb-1">{name}</div>
                   <progress className="w-full" value={percent} max="100" />
                   <span className="text-xs ml-2">{percent}%</span>
+                  <span className="text-xs ml-2 text-gray-500">
+                    {(fileSpeed[name] / 1024).toFixed(1)} KB/s
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         </div>
       )}
+      <ToastContainer />
     </div>
   );
 }
 
 export default NewProject;
-
-// const handleFileUpload = async (e) => {
-//   const files = Array.from(e.target.files);
-//   console.log('files:', files);
-//   setSelectedFiles(files.map(f => f.name)); // Store all file names
-//   setFileProgress(files.reduce((acc, f) => ({ ...acc, [f.name]: 0 }), {}));
-//   const sessionId = new Date().toLocaleString('en-GB', {
-//     year: 'numeric',
-//     month: '2-digit',
-//     day: '2-digit',
-//     hour: '2-digit',
-//     minute: '2-digit',
-//     second: '2-digit',
-//   }).replace(/[/, ]/g, '-').replace(/:/g, '-');
-//   const uploadedFiles = [];
-//   if (testName === '') {
-//     alert('Please select a test name before uploading files');
-//     return;
-//   }
-
-//   for (const file of files) {
-//     if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
-//       const baseName = extractBaseName(file.name);
-//       const matched = sampleIds.some(id => cleanId(id) === baseName);
-
-//       if (!matched) {
-//         alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
-//         continue;
-//       }
-//     }
-
-//     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-
-//     for (let i = 0; i < totalChunks; i++) {
-//       const start = i * CHUNK_SIZE;
-//       const end = Math.min(start + CHUNK_SIZE, file.size);
-//       const chunk = file.slice(start, end);
-
-//       const formData = new FormData();
-//       formData.append('chunk', chunk);
-//       formData.append('sessionId', sessionId);
-//       formData.append('projectName', projectName);
-//       formData.append('chunkIndex', i);
-//       formData.append('fileName', file.name);
-
-//       setShowProgressModal(true);
-//       await axios.post(
-//         `http://localhost:5000/upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
-//         formData,
-//         {
-//           headers: { 'Content-Type': 'multipart/form-data' },
-//           onUploadProgress: (progressEvent) => {
-//             const percent = Math.round(
-//               ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
-//             );
-//             setFileProgress(prev => ({
-//               ...prev,
-//               [file.name]: percent
-//             }));
-//           },
-//         }
-//       );
-//     }
-
-//     uploadedFiles.push(file.name);
-//   }
-
-//   await axios.post('http://localhost:5000/merge', {
-//     sessionId,
-//     fileNames: uploadedFiles,
-//     testName,
-//     email,
-//     numberOfSamples: sampleIds.length,
-//     projectName,
-//   });
-
-//   localStorage.setItem('sessionId', sessionId);
-
-//   setShowProgressModal(false);
-//   alert('✅ All valid files uploaded and merged!');
-// };

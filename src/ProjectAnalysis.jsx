@@ -44,16 +44,6 @@ const ProjectAnalysis = () => {
         fetchData();
     }, []);
 
-    //    const handleDownloadLink =async(projectid)=>{
-    //     try{
-    //         projectid='PRJ-20250826-20';
-    //         const response = await axios.get(`http://localhost:5000/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`);
-
-    //     }
-    //     catch(error){
-    //         console.error('API error:', error);
-    //     }
-    //    }
     return (
         <div className="w-full px-8 py-4">
             <div className="overflow-auto max-h-[70vh]">
@@ -65,7 +55,6 @@ const ProjectAnalysis = () => {
                             <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Creation Time</th>
                             <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Progress</th>
                             <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Number Of Sample</th>
-                            {/* <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Download VCF</th> */}
                         </tr>
                     </thead>
                     <tbody>
@@ -89,8 +78,8 @@ const ProjectAnalysis = () => {
                                     <td className="px-4 py-2">{item.projectid}</td>
                                     <td className="px-4 py-2">{item.projectname}</td>
                                     <td className="px-4 py-2">{new Date(parseInt(item.creationtime)).toLocaleString()}</td>
+                                    <td className='px-4 py-2'>100%</td>
                                     <td className="px-4 py-2">{item.numberofsamples}</td>
-                                    {/* <td className="px-4 py-2 cursor-pointer text-blue-400 underline" onClick={() => handleDownloadLink(item.projectid)}>Download Link</td> */}
                                 </tr>
                             ))
                             :

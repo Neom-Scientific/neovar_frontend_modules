@@ -6,13 +6,11 @@ const Home = () => {
     const [counterData, setCounterData] = useState([]);
     const user = Cookies.get('neovar_user') || '';
     const email = JSON.parse(user).email;
-    console.log(process.env.REACT_APP_URL);
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_URL}read-counter-json?email=${email}`);
                 if (response.status === 200) {
-                    console.log('response:', response);
                     setCounterData(response.data);
                 }
                 else if (response.status === 404) {
