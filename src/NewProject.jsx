@@ -129,6 +129,7 @@ function NewProject({ onShowAnalysis }) {
               return;
             }
           }
+          setShowProgressModal(true);
 
           let lastTime = Date.now();
           let lastLoaded = 0;
