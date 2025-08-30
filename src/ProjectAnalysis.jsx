@@ -19,11 +19,17 @@ const ProjectAnalysis = () => {
                 const response = await axios.get(
                     `${process.env.REACT_APP_URL}progress?sessionId=${encodeURIComponent(sessionId)}&email=${encodeURIComponent(email)}`
                 );
-                if(response.data[0].status === 404){
-                    return setProgressData([]);
+                // Defensive checks
+                const rows = response.data?.rows;
+                if (!rows || rows.length === 0) {
+                    setProgressData([]);
+                    return;
                 }
-                const data = response.data.rows[0];
-                setProgressData([data]); // Wrap in array for table rendering
+                if (rows[0]?.status === 404) {
+                    setProgressData([]);
+                    return;
+                }
+                setProgressData(rows); // rows is already an array
             } catch (error) {
                 console.error('Error fetching progress:', error);
                 setProgressData([]);

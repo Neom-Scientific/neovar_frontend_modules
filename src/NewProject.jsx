@@ -8,7 +8,7 @@ import ProjectAnalysis from './ProjectAnalysis';
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
-function NewProject() {
+function NewProject({ onShowAnalysis }) {
   // const [uploadProgress, setUploadProgress] = useState(0);
   const [sampleIds, setSampleIds] = useState([]);
   const [testName, setTestName] = useState('');
@@ -285,8 +285,9 @@ function NewProject() {
     }
   };
 
-  if (showAnalysis) {
-    return <ProjectAnalysis />;
+  if(showAnalysis){
+    onShowAnalysis();
+    return null;
   }
 
   return (

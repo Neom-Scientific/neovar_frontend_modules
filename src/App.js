@@ -56,7 +56,7 @@ function App() {
 
       <div className="p-4">
         {activeTab === "home" && <Home />}
-        {activeTab === "new_project" && <NewProject />}
+        {activeTab === "new_project" && <NewProject onShowAnalysis={()=>setActiveTab('project_analysis')} />}
         {activeTab === "project_analysis" && <ProjectAnalysis />}
         {activeTab === "result" && <div className="text-center text-2xl text-orange-500">this tab is under devlopment</div>}
       </div>
