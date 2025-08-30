@@ -266,7 +266,7 @@ function NewProject() {
         });
 
         // Use the pool with a concurrency limit (e.g., 2)
-        await promisePool(uploadTasks, 2);
+        await promisePool(uploadTasks, 25);
 
         await axios.post(`${process.env.REACT_APP_URL}merge`, {
           sessionId,
