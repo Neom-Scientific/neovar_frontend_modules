@@ -117,88 +117,6 @@ function NewProject({ onShowAnalysis }) {
     }
 
     if (validProcess.status === 200) {
-      //   await Promise.all(files.map(async (file) => {
-      //     if (/\.(fastq|fq)(\.gz)?$/i.test(file.name)) {
-      //       const baseName = extractBaseName(file.name);
-      //       const matched = sampleIds.some(id => cleanId(id) === baseName);
-
-      //       if (!matched) {
-      //         // alert(`❌ FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
-      //         toast.error(`FASTQ file "${file.name}" not found in Excel's "Sample ID" column`);
-      //         return;
-      //       }
-      //     }
-
-      //     let lastTime = Date.now();
-      //     let lastLoaded = 0;
-      //     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-
-      //     for (let i = 0; i < totalChunks; i++) {
-      //       const start = i * CHUNK_SIZE;
-      //       const end = Math.min(start + CHUNK_SIZE, file.size);
-      //       const chunk = file.slice(start, end);
-
-      //       const formData = new FormData();
-      //       formData.append('chunk', chunk);
-      //       formData.append('sessionId', sessionId);
-      //       formData.append('projectName', projectName);
-      //       formData.append('chunkIndex', i);
-      //       formData.append('fileName', file.name);
-
-      //       setShowProgressModal(true);
-      //       await axios.post(
-      //         `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
-      //         formData,
-      //         {
-      //           headers: { 'Content-Type': 'multipart/form-data' },
-      //           timeout: 600000, // 10 minutes per chunk
-      //           onUploadProgress: (progressEvent) => {
-      //             // Calculate total loaded for this file
-      //             const stats = fileUploadStats.current[file.name];
-      //             const now = Date.now();
-      //             // progressEvent.loaded is for this chunk, so add to totalLoaded
-      //             const chunkLoaded = (i * CHUNK_SIZE) + progressEvent.loaded;
-      //             const timeDiff = (now - stats.lastTime) / 1000; // seconds
-      //             const bytesDiff = chunkLoaded - stats.lastLoaded;
-      //             if (timeDiff > 0) {
-      //               const speed = bytesDiff / timeDiff; // bytes per second
-      //               setFileSpeed(prev => ({
-      //                 ...prev,
-      //                 [file.name]: speed
-      //               }));
-      //               stats.lastTime = now;
-      //               stats.lastLoaded = chunkLoaded;
-      //             }
-      //             const percent = Math.round(
-      //               ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
-      //             );
-      //             setFileProgress(prev => ({
-      //               ...prev,
-      //               [file.name]: percent
-      //             }));
-      //           }
-      //         }
-      //       );
-      //     }
-
-      //     uploadedFiles.push(file.name);
-      //   }));
-
-      //   await axios.post(`${process.env.REACT_APP_URL}merge`, {
-      //     sessionId,
-      //     fileNames: uploadedFiles,
-      //     testName,
-      //     email,
-      //     numberOfSamples: sampleIds.length,
-      //     projectName,
-      //   });
-
-      //   localStorage.setItem('sessionId', sessionId);
-      //   setShowAnalysis(true);
-      //   setShowProgressModal(false);
-      //   toast.success('All valid files uploaded and merged successfully!');
-      //   // alert('✅ All valid files uploaded and merged!');
-      // }
       if (validProcess.status === 200) {
         // Create an array of upload tasks (functions)
         const uploadTasks = files.map(file => async () => {
@@ -228,38 +146,54 @@ function NewProject({ onShowAnalysis }) {
             formData.append('chunkIndex', i);
             formData.append('fileName', file.name);
 
-            setShowProgressModal(true);
-            await axios.post(
-              `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
-              formData,
-              {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                timeout: 600000, // 10 minutes per chunk
-                onUploadProgress: (progressEvent) => {
-                  const stats = fileUploadStats.current[file.name];
-                  const now = Date.now();
-                  const chunkLoaded = (i * CHUNK_SIZE) + progressEvent.loaded;
-                  const timeDiff = (now - stats.lastTime) / 1000;
-                  const bytesDiff = chunkLoaded - stats.lastLoaded;
-                  if (timeDiff > 0) {
-                    const speed = bytesDiff / timeDiff;
-                    setFileSpeed(prev => ({
-                      ...prev,
-                      [file.name]: speed
-                    }));
-                    stats.lastTime = now;
-                    stats.lastLoaded = chunkLoaded;
+            let success = false;
+            let attempts = 0;
+            const maxRetries = 20;
+
+            while (!success && attempts < maxRetries) {
+              try {
+                await axios.post(
+                  `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+                  formData,
+                  {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    timeout: 600000,
+                    onUploadProgress: (progressEvent) => {
+                      const stats = fileUploadStats.current[file.name];
+                      const now = Date.now();
+                      const chunkLoaded = (i * CHUNK_SIZE) + progressEvent.loaded;
+                      const timeDiff = (now - stats.lastTime) / 1000;
+                      const bytesDiff = chunkLoaded - stats.lastLoaded;
+                      if (timeDiff > 0) {
+                        const speed = bytesDiff / timeDiff;
+                        setFileSpeed(prev => ({
+                          ...prev,
+                          [file.name]: speed
+                        }));
+                        stats.lastTime = now;
+                        stats.lastLoaded = chunkLoaded;
+                      }
+                      const percent = Math.round(
+                        ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
+                      );
+                      setFileProgress(prev => ({
+                        ...prev,
+                        [file.name]: percent
+                      }));
+                    }
                   }
-                  const percent = Math.round(
-                    ((i + progressEvent.loaded / progressEvent.total) / totalChunks) * 100
-                  );
-                  setFileProgress(prev => ({
-                    ...prev,
-                    [file.name]: percent
-                  }));
+                );
+                success = true; // If upload succeeds, exit the retry loop
+              } catch (err) {
+                attempts++;
+                if (attempts >= maxRetries) {
+                  toast.error(`Failed to upload chunk ${i + 1} of ${file.name} after ${maxRetries} attempts.`);
+                  throw err; // Or handle as needed
                 }
+                // Optionally, add a delay before retrying
+                await new Promise(res => setTimeout(res, 1000));
               }
-            );
+            }
           }
 
           uploadedFiles.push(file.name);
@@ -285,7 +219,7 @@ function NewProject({ onShowAnalysis }) {
     }
   };
 
-  if(showAnalysis){
+  if (showAnalysis) {
     onShowAnalysis();
     return null;
   }
