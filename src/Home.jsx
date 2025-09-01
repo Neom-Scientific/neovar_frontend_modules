@@ -34,10 +34,12 @@ const Home = () => {
         try {
             // projectid = 'PRJ-20';
             const response = await axios.get(
-                `${process.env.REACT_APP_URL}download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
+                `${process.env.REACT_APP_URL}download-vcf?projectId=${projectid}&email=${email}`,
                 { responseType: 'blob' }
             );
+            console.log('response', response);
             const url = window.URL.createObjectURL(new Blob([response.data]));
+            console.log('url', url);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', 'vcf_files.zip'); // <-- Use .zip here
