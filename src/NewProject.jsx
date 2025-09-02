@@ -51,7 +51,13 @@ function NewProject({ onShowAnalysis }) {
     const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
     const ids = sheetData
-      .map(row => cleanId(row['Sample ID']))
+      .map(row => {
+        // Find the key that matches "sample id" (case-insensitive, ignore spaces/underscores)
+        const sampleIdKey = Object.keys(row).find(
+          key => key.replace(/[\s_]/g, '').toLowerCase() === 'sampleid'
+        );
+        return cleanId(row[sampleIdKey]);
+      })
       .filter(Boolean);
 
     setSampleIds(ids);
@@ -108,7 +114,7 @@ function NewProject({ onShowAnalysis }) {
     }
     sessionId = sessionId + '-' + email;
 
-    const validProcess = await axios.get(`${process.env.REACT_APP_URL}start-project?email=${encodeURIComponent(email)}`);
+    const validProcess = await axios.get(`${process.env.REACT_APP_URL}start-project?email=${encodeURIComponent(email)}&numberofsamples=${sampleIds.length}`);
 
     // console.log('validProcess:', validProcess);
     if (validProcess.data.status === 400) {
@@ -248,7 +254,7 @@ function NewProject({ onShowAnalysis }) {
         </div>
         <div className="w-full flex flex-col items-start">
           <span className="block text-xl font-bold mb-2">Download Sheet Format</span>
-          <a href='/downloads/nipt.xls' className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded">
+          <a href='/downloads/sample_sheet.xls' className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded">
             Download Excel File
           </a>
         </div>
@@ -289,7 +295,7 @@ function NewProject({ onShowAnalysis }) {
         <table className="min-w-full border-t">
           <thead>
             <tr>
-              <th className="px-4 py-2 text-left">Library Id</th>
+              <th className="px-4 py-2 text-left">Serial No</th>
               <th className="px-4 py-2 text-left">Sample ID</th>
             </tr>
           </thead>

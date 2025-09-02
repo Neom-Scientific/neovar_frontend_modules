@@ -6,16 +6,20 @@ const Home = () => {
     const [counterData, setCounterData] = useState([]);
     const user = Cookies.get('neovar_user') || '';
     const email = JSON.parse(user).email;
+    const [loading, setLoading] = useState(false);
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
                 const response = await axios.get(`${process.env.REACT_APP_URL}read-counter-json?email=${email}`);
                 // console.log('response', response.data[0].message);
                 if (response.status === 200) {
+                    setLoading(false);
                     setCounterData(response.data);
                 }
                 else if(response.data[0].status === 404) {
                     // console.log('404')
+                    setLoading(false);
                     setCounterData([]);
                 }
             } catch (error) {
@@ -97,12 +101,29 @@ const Home = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {counterData && counterData.length > 0 && counterData[0].status !== 404 ?
+                        {loading ?
+                        <tr>
+                            <td colSpan="5" className="px-4 py-2 text-center text-lg font-bold text-orange-500">
+                                Loading Data...
+                            </td>
+                        </tr>
+                        :
+                            counterData && counterData.length > 0 && counterData[0].status !== 404 ?
                             counterData.map((item, index) => (
                                 <tr key={index} className="border-t">
                                     <td className="px-4 py-2">{item.projectid}</td>
                                     <td className="px-4 py-2">{item.projectname}</td>
-                                    <td className="px-4 py-2">{new Date(parseInt(item.creationtime)).toLocaleString()}</td>
+                                    <td className="px-4 py-2">
+                                        {new Date(parseInt(item.creationtime)).toLocaleString('en-GB', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                        })}
+                                    </td>
                                     <td className="px-4 py-2">{item.numberofsamples}</td>
                                     <td className="px-4 py-2 cursor-pointer text-blue-400 underline" onClick={() => handleDownloadLink(item.projectid)}>Download Link</td>
                                 </tr>

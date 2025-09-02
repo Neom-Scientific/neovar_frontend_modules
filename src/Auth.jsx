@@ -19,6 +19,7 @@ const Auth = () => {
             const data = {
                 username: form.username,
                 password: form.password,
+                application_name: 'neovar'
             }
             const response = await axios.post('https://trf-dashboard-bay.vercel.app/api/login-insert', data)
             if (response.data[0].status === 200) {

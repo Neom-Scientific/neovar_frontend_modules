@@ -44,8 +44,8 @@ const ProjectAnalysis = () => {
         const fetchData = async () => {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_URL}read-counter-json?email=${email}`);
-                if(response.status === 200) {
-                setCounterData(response.data);
+                if (response.status === 200) {
+                    setCounterData(response.data);
                 }
                 else if (response.data[0].status === 404) {
                     setCounterData([]);
@@ -71,12 +71,74 @@ const ProjectAnalysis = () => {
                         </tr>
                     </thead>
                     <tbody>
+                        {progressData.length === 0 && (!counterData || counterData.length === 0 || counterData[0].status === 404) ? (
+                            <tr>
+                                <td colSpan="5" className="px-4 py-2 text-center text-lg font-bold text-orange-500">
+                                    No Project Found
+                                </td>
+                            </tr>
+                        ) : (
+                            <>
+                                {progressData.length > 0 && progressData.map((item, idx) => (
+                                    <tr key={item.projectid || idx}>
+                                        <td className="px-4 py-2">{item.projectid}</td>
+                                        <td className='px-4 py-2'>{item.projectname}</td>
+                                        <td className="px-4 py-2">
+                                            {new Date(parseInt(item.starttime)).toLocaleString('en-GB', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit',
+                                                hour12: false
+                                            })}
+                                        </td>
+                                        <td>
+                                            <progress value={item.progress} max="100" />
+                                            {` ${item.progress}%`}
+                                        </td>
+                                        <td className="px-4 py-2">{item.numberofsamples}</td>
+                                    </tr>
+                                ))}
+                                {counterData && counterData.length > 0 && counterData[0].status !== 404 && counterData.map((item, index) => (
+                                    <tr key={index} className="border-t">
+                                        <td className="px-4 py-2">{item.projectid}</td>
+                                        <td className="px-4 py-2">{item.projectname}</td>
+                                        <td className="px-4 py-2">
+                                            {new Date(parseInt(item.creationtime)).toLocaleString('en-GB', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit',
+                                                hour12: false
+                                            })}
+                                        </td>
+                                        <td className='px-4 py-2'>100%</td>
+                                        <td className="px-4 py-2">{item.numberofsamples}</td>
+                                    </tr>
+                                ))}
+                            </>
+                        )}
+                    </tbody>
+                    {/* <tbody>
                         {progressData.length > 0 && (progressData.map((item, idx) => (
                             <tr key={item.projectid || idx}>
                                 <td className="px-4 py-2">{item.projectid}</td>
                                 <td className='px-4 py-2'>{item.projectname}</td>
                                 <td className="px-4 py-2">
-                                    {new Date(parseInt(item.starttime)).toLocaleString()}</td>
+                                        {new Date(parseInt(item.starttime)).toLocaleString('en-GB', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                        })}
+                                    </td>              
                                 <td>
                                     <progress value={item.progress} max="100" />
                                     {` ${item.progress}%`}
@@ -90,8 +152,17 @@ const ProjectAnalysis = () => {
                                 <tr key={index} className="border-t">
                                     <td className="px-4 py-2">{item.projectid}</td>
                                     <td className="px-4 py-2">{item.projectname}</td>
-                                    <td className="px-4 py-2">{new Date(parseInt(item.creationtime)).toLocaleString()}</td>
-                                    <td className='px-4 py-2'>100%</td>
+                                    <td className="px-4 py-2">
+                                        {new Date(parseInt(item.creationtime)).toLocaleString('en-GB', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                        })}
+                                    </td>                                    <td className='px-4 py-2'>100%</td>
                                     <td className="px-4 py-2">{item.numberofsamples}</td>
                                 </tr>
                             ))
@@ -103,7 +174,7 @@ const ProjectAnalysis = () => {
                             </tr>
 
                         }
-                    </tbody>
+                    </tbody> */}
                 </table>
             </div>
         </div>
