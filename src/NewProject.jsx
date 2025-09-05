@@ -314,7 +314,8 @@ function NewProject({ onShowAnalysis }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md flex flex-col items-center">
             <span className="text-lg font-semibold mb-4">Uploading Files...</span>
-            <div className="w-full space-y-4">
+            {/* Add scrollable container here */}
+            <div className="w-full space-y-4 max-h-80 overflow-y-auto">
               {Object.entries(fileProgress).map(([name, percent]) => (
                 <div key={name} className="mb-2">
                   <div className="text-sm font-medium mb-1">{name}</div>
