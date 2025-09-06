@@ -5,6 +5,7 @@ import ProjectAnalysis from "./ProjectAnalysis";
 import Cookies from "js-cookie"
 import Auth from "./Auth";
 import Header from "./Header";
+import Help from "./Help";
 
 function App() {
   const [activeTab, setActiveTab] = useState("home");
@@ -27,6 +28,7 @@ function App() {
     { key: "new_project", label: "New Project" },
     { key: "project_analysis", label: "Project Analysis" },
     { key: "result", label: "Result" },
+    { key: "help", label: "Help" },
   ];
 
   return (
@@ -59,6 +61,7 @@ function App() {
         {activeTab === "new_project" && <NewProject onShowAnalysis={()=>setActiveTab('project_analysis')} />}
         {activeTab === "project_analysis" && <ProjectAnalysis />}
         {activeTab === "result" && <div className="text-center text-2xl text-orange-500">this tab is under devlopment</div>}
+        {activeTab === "help" && <Help/>}
       </div>
     </div>
     </>
