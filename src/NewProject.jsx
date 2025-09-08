@@ -19,6 +19,7 @@ function NewProject({ onShowAnalysis }) {
   const [selectedFiles, setSelectedFiles] = useState({});
   const [fileSpeed, setFileSpeed] = useState({});
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [processingMode, setProcessingMode] = useState('');
   const fileUploadStats = useRef({});
 
   useEffect(() => {
@@ -160,7 +161,7 @@ function NewProject({ onShowAnalysis }) {
             while (!success && attempts < maxRetries) {
               try {
                 await axios.post(
-                  `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}`,
+                  `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}&processingMode=${encodeURIComponent(processingMode)}`,
                   formData,
                   {
                     headers: { 'Content-Type': 'multipart/form-data' },
@@ -260,6 +261,16 @@ function NewProject({ onShowAnalysis }) {
         </div>
       </div>
 
+      <label className="block text-xl font-bold mb-2">Select the Processing Mode</label>
+      <select 
+      onChange={(e)=>setProcessingMode(e.target.value)}
+      value = {processingMode}
+      className='w-1/2 mb-6 px-4 py-2 border rounded bg-gray-100'>
+        <option value=''>Select Processing Mode</option>
+        <option value='quantum_mode'>Quantum Mode</option>
+        <option value='hyper_mode'>Hyper Mode</option>
+      </select>
+
       <label className="block text-xl font-bold mb-2">Select the Type of Test</label>
       <select
         className="w-1/2 mb-6 px-4 py-2 border rounded bg-gray-100"
@@ -267,10 +278,27 @@ function NewProject({ onShowAnalysis }) {
         value={testName}
       >
         <option value=''>Select Test Type</option>
-        <option value='exome'>Exome</option>
+        {processingMode && processingMode === 'quantum_mode' && (
+          <>
+          <option value='exome'>Exome</option>
         <option value='carrier'>Carrier</option>
         <option value='clinical'>Clinical</option>
+          </>
+        )}
+        
+        {processingMode && processingMode === 'hyper_mode' && (
+          <>
+            <option value='neo_exome'>Neo Exome</option>
+            <option value='comp_x'>Comp X</option>
+            <option value='comp_x_v2'>Comp X v2</option>
+            <option value='carrier'>Carrier Screening</option>
+            <option value='clinical'>Clinical Exome</option>
+            <option value='cmp'>CMP</option>
+            <option value='cms'>CMS</option>
+          </>
+        )}
       </select>
+
 
       <label className="block text-xl font-bold mb-2">Upload Files</label>
       <input
@@ -281,14 +309,6 @@ function NewProject({ onShowAnalysis }) {
         onChange={handleFileUpload}
       />
       <div className="text-sm text-gray-600 mb-6">Accepted: .fastq, .fq, .fastq.gz, .fq.gz</div>
-
-
-      {/* <button
-        className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded"
-        onClick={() => alert('Start Analysis')}
-      >
-        Start Analysis
-      </button> */}
 
       {/* Table */}
       <div className="mt-12">

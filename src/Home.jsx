@@ -37,20 +37,20 @@ const Home = () => {
     const handleDownloadLink = async (projectid) => {
         try {
             // projectid = 'PRJ-20';
-            const response = await axios.get(
-                `${process.env.REACT_APP_URL}download-vcf?projectId=${projectid}&email=${email}`,
-                { responseType: 'blob' }
+            const response = await axios.post(
+                `${process.env.REACT_APP_URL}create-syno-share?`,
+                { 
+                    project_id: projectid,
+                    email: email
+                 }
             );
-            console.log('response', response);
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            console.log('url', url);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', 'vcf_files.zip'); // <-- Use .zip here
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            // console.log('response', response);
+            const downloadLink = response.data.data.links[0].url;
+            // console.log('downloadLink', downloadLink);
+
+            // redirect to the download link in new tab
+            window.open(downloadLink, '_blank');
+        
         }
         catch (error) {
             console.error('API error:', error);
@@ -97,7 +97,7 @@ const Home = () => {
                             <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Project Name</th>
                             <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Creation Time</th>
                             <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Number Of Sample</th>
-                            <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Download VCF</th>
+                            <th className="px-4 py-2 text-left sticky top-0 bg-orange-100 z-10">Download Folder</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -125,7 +125,9 @@ const Home = () => {
                                         })}
                                     </td>
                                     <td className="px-4 py-2">{item.numberofsamples}</td>
-                                    <td className="px-4 py-2 cursor-pointer text-blue-400 underline" onClick={() => handleDownloadLink(item.projectid)}>Download Link</td>
+                                    <td className="px-4 py-2 cursor-pointer text-blue-400 underline" onClick={() => handleDownloadLink(item.projectid)}>
+                                    Download Link
+                                    </td>
                                 </tr>
                             ))
 
