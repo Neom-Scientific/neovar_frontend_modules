@@ -115,7 +115,7 @@ function NewProject({ onShowAnalysis }) {
     }
     sessionId = sessionId + '-' + email;
 
-    const validProcess = await axios.get(`${process.env.REACT_APP_URL}start-project?email=${encodeURIComponent(email)}&numberofsamples=${sampleIds.length}`);
+    const validProcess = await axios.get(`${process.env.REACT_APP_URL}start-project?email=${encodeURIComponent(email)}&numberofsamples=${sampleIds.length}&application_type=${encodeURIComponent("neovar")}`);
 
     // console.log('validProcess:', validProcess);
     if (validProcess.data.status === 400) {
@@ -161,7 +161,7 @@ function NewProject({ onShowAnalysis }) {
             while (!success && attempts < maxRetries) {
               try {
                 await axios.post(
-                  `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}&processingMode=${encodeURIComponent(processingMode)}`,
+                  `${process.env.REACT_APP_URL}upload?sessionId=${sessionId}&chunkIndex=${i}&fileName=${encodeURIComponent(file.name)}&projectName=${encodeURIComponent(projectName)}&email=${encodeURIComponent(email)}&processingMode=${encodeURIComponent(processingMode)}&application_type=${encodeURIComponent("neovar")}`,
                   formData,
                   {
                     headers: { 'Content-Type': 'multipart/form-data' },
@@ -293,8 +293,6 @@ function NewProject({ onShowAnalysis }) {
             <option value='comp_x_v2'>Comp X v2</option>
             <option value='carrier'>Carrier Screening</option>
             <option value='clinical'>Clinical Exome</option>
-            <option value='cmp'>CMP</option>
-            <option value='cms'>CMS</option>
           </>
         )}
       </select>
