@@ -21,7 +21,7 @@ const Auth = () => {
                 password: form.password,
                 application_name: 'neovar'
             }
-            const response = await axios.post('https://trf-dashboard-bay.vercel.app/api/login-insert', data)
+            const response = await axios.post('https://vide-woad.vercel.app/api/login-insert', data)
             if (response.data[0].status === 200) {
                 Cookies.set('neovar_user', JSON.stringify(response.data[0].data), { expires: 7 });
                 return window.location.reload();
@@ -45,7 +45,7 @@ const Auth = () => {
                 email: signupForm.email,
                 phone_no: signupForm.phone_no,
             }
-            const response = axios.post('https://trf-dashboard-bay.vercel.app/api/request-insert', data)
+            const response = axios.post('https://vide-woad.vercel.app/api/request-insert', data)
             if (response.data[0].status === 200) {
                 // alert('Request Submitted Successfully. You will receive username and password on your email.');
                 toast.success('Request Submitted Successfully. You will receive username and password on your email.');
