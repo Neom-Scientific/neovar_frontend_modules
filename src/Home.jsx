@@ -34,58 +34,59 @@ const Home = () => {
 
     // console.log('counterData', counterData);
 
-    const handleDownloadLink = async (projectid) => {
-        try {
-            // projectid = 'PRJ-20';
-            const response = await axios.post(
-                `${process.env.REACT_APP_URL}create-syno-share?`,
-                { 
-                    project_id: projectid,
-                    email: email
-                 }
-            );
-            // console.log('response', response);
-            const downloadLink = response.data.data.links[0].url;
-            // console.log('downloadLink', downloadLink);
-
-            // redirect to the download link in new tab
-            window.open(downloadLink, '_blank');
-        
-        }
-        catch (error) {
-            console.error('API error:', error);
-        }
-    }
-
     // const handleDownloadLink = async (projectid) => {
     //     try {
-    //         projectid = 'PRJ-20250826-20';
-    //         const response = await axios.get(
-    //             `http://localhost:5000/download-vcf?projectId=${projectid}&email=${localStorage.getItem('email')}`,
-    //             { responseType: 'blob' }
+    //         // projectid = 'PRJ-20';
+    //         const response = await axios.post(
+    //             `${process.env.REACT_APP_URL}create-syno-share?`,
+    //             { 
+    //                 project_id: projectid,
+    //                 email: email
+    //              }
     //         );
-    //         // Try to get filename from Content-Disposition header
-    //         let filename = 'vcf_files.zip';
-    //         const disposition = response.headers['content-disposition'];
-    //         if (disposition && disposition.indexOf('filename=') !== -1) {
-    //             filename = disposition
-    //                 .split('filename=')[1]
-    //                 .replace(/['"]/g, '')
-    //                 .trim();
-    //         }
-    //         const url = window.URL.createObjectURL(new Blob([response.data]));
-    //         const link = document.createElement('a');
-    //         link.href = url;
-    //         link.setAttribute('download', filename);
-    //         document.body.appendChild(link);
-    //         link.click();
-    //         document.body.removeChild(link);
-    //         window.URL.revokeObjectURL(url);
+    //         // console.log('response', response);
+    //         const downloadLink = response.data.data.links[0].url;
+    //         // console.log('downloadLink', downloadLink);
+
+    //         // redirect to the download link in new tab
+    //         window.open(downloadLink, '_blank');
+        
     //     }
     //     catch (error) {
     //         console.error('API error:', error);
     //     }
     // }
+
+    const handleDownloadLink = async (projectid) => {
+        try {
+            // projectid = 'PRJ-20250826-20';
+            
+            const response = await axios.get(
+                `http://localhost:5000/download-vcf?projectId=${projectid}&email=${email}`,
+                { responseType: 'blob' }
+            );
+            // Try to get filename from Content-Disposition header
+            let filename = 'vcf_files.zip';
+            const disposition = response.headers['content-disposition'];
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                filename = disposition
+                    .split('filename=')[1]
+                    .replace(/['"]/g, '')
+                    .trim();
+            }
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
+        catch (error) {
+            console.error('API error:', error);
+        }
+    }
 
     return (
         <div className="w-full px-8 py-4">
