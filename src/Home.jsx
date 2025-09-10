@@ -62,7 +62,7 @@ const Home = () => {
             // projectid = 'PRJ-20250826-20';
             
             const response = await axios.get(
-                `http://localhost:5000/download-vcf?projectId=${projectid}&email=${email}`,
+                `${process.env.REACT_APP_URL}download-vcf?projectId=${projectid}&email=${email}`,
                 { responseType: 'blob' }
             );
             // Try to get filename from Content-Disposition header
