@@ -99,15 +99,20 @@ const Reports = () => {
                                 </div>
                                 {openFolderIdx === idx && (
                                     <ul className="none ml-6 mt-2">
-                                        {f.files.map((file, fileIdx) => (
-                                            <li
-                                                key={fileIdx}
-                                                className="cursor-pointer text-blue-600 hover:underline"
-                                                onClick={() => handleFileDownload(`${f.outputDir}/${f.folder}/${file}`)}
-                                            >
-                                                {file}
-                                            </li>
-                                        ))}
+                                        {f.files.map((file, fileIdx) => {
+                                            const filePath = `${f.outputDir}/${f.folder}/${file}`;
+                                            return (
+                                                <li key={fileIdx}>
+                                                    <a
+                                                        href={`${process.env.REACT_APP_URL}download-file?filePath=${encodeURIComponent(filePath)}`}
+                                                        className="text-black font-bold underline"
+                                                        download
+                                                    >
+                                                        {file}
+                                                    </a>
+                                                </li>
+                                            )
+                                        })}
                                     </ul>
                                 )}
                             </li>
